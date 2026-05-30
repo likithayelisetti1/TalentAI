@@ -1,0 +1,27 @@
+venv/
+backend/venv/
+
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+.env
+
+node_modules/
+
+dist/
+build/
+
+.vscode/
+.idea/
+
+# SQLite Database files (crucial for keeping git history clean)
+*.db
+*.db-journal
+*.db-wal
+*.sqlite3
+
+# System / OS garbage files
+.DS_Store
+Thumbs.db

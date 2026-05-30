@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interview Intelligence Platform | Candidate Dashboard</title>
+    
+    <!-- Meta tags for SEO & best practices -->
+    <meta name="description" content="AI-Powered Interview Intelligence and Candidate Comparison Platform. Streamline evaluations, analyze skills, and rank candidates fairly.">
+    <meta name="theme-color" content="#1e2230">
+
+    <!-- Premium Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Custom Style Sheet -->
+    <link rel="stylesheet" href="css/style.css">
+    
+    <!-- Lucide Icons for clean aesthetic -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <div class="app-container">
+        
+        <!-- Sidebar Navigation & Insights -->
+        <aside class="app-sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-logo">
+                    <i data-lucide="brain-circuit" class="logo-icon"></i>
+                </div>
+                <div class="brand-text">
+                    <h2>TalentAI</h2>
+                    <span>Interview Intelligence</span>
+                </div>
+            </div>
+            
+            <nav class="sidebar-menu">
+                <a href="#" class="menu-item active" id="nav-dashboard">
+                    <i data-lucide="layout-dashboard"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#" class="menu-item disabled" title="Available in Phase 2">
+                    <i data-lucide="calendar"></i>
+                    <span>Interviews</span>
+                    <span class="badge badge-locked">P2</span>
+                </a>
+                <a href="#" class="menu-item disabled" title="Available in Phase 3">
+                    <i data-lucide="award"></i>
+                    <span>Evaluations</span>
+                    <span class="badge badge-locked">P3</span>
+                </a>
+                <a href="#" class="menu-item disabled" title="Available in Phase 4">
+                    <i data-lucide="git-compare"></i>
+                    <span>Compare</span>
+                    <span class="badge badge-locked">P4</span>
+                </a>
+            </nav>
+            
+            <!-- Quick Dashboard Analytics Panel (Phase 1 local metadata) -->
+            <div class="sidebar-stats-card">
+                <h3>Quick Metrics</h3>
+                <div class="stat-row">
+                    <span class="stat-label">Total Candidates</span>
+                    <span class="stat-value" id="stats-total-candidates">0</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Avg. Experience</span>
+                    <span class="stat-value" id="stats-avg-experience">0 yrs</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">System Mode</span>
+                    <span class="stat-value highlight-text">Phase 1</span>
+                </div>
+            </div>
+
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <div class="avatar">HR</div>
+                    <div class="user-info">
+                        <h4>HR Recruiter</h4>
+                        <span>Hiring Manager</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Dashboard Workspace -->
+        <main class="app-main">
+            <!-- Header section -->
+            <header class="app-header">
+                <div class="header-title">
+                    <span class="breadcrumb">Overview / Candidates</span>
+                    <h1 id="main-heading">Candidate Management</h1>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-primary" id="btn-open-add-modal">
+                        <i data-lucide="user-plus"></i>
+                        <span>Add Candidate</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Dashboard Control Filters (Search & Actions) -->
+            <section class="dashboard-controls">
+                <div class="search-box">
+                    <i data-lucide="search" class="search-icon"></i>
+                    <input type="text" id="search-input" placeholder="Search by name, skills, or college...">
+                </div>
+                
+                <div class="filter-summary">
+                    <span class="filter-count" id="candidate-count-summary">Showing 0 candidates</span>
+                </div>
+            </section>
+
+            <!-- Candidates Interactive Table Grid -->
+            <section class="table-container glass-card">
+                <table class="candidates-table" id="candidates-table-element">
+                    <thead>
+                        <tr>
+                            <th>Candidate Details</th>
+                            <th class="sortable-header" id="th-name" data-sort="full_name">
+                                <span>Name</span>
+                                <i data-lucide="chevrons-up-down" class="sort-icon"></i>
+                            </th>
+                            <th>Contact</th>
+                            <th class="sortable-header" id="th-college" data-sort="college">
+                                <span>College</span>
+                                <i data-lucide="chevrons-up-down" class="sort-icon"></i>
+                            </th>
+                            <th>Skills</th>
+                            <th class="sortable-header" id="th-experience" data-sort="experience_years">
+                                <span>Experience</span>
+                                <i data-lucide="chevrons-up-down" class="sort-icon"></i>
+                            </th>
+                            <th class="actions-header">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="candidates-tbody">
+                        <!-- Loaded dynamically via JavaScript -->
+                        <tr class="empty-state-row">
+                            <td colspan="7">
+                                <div class="table-empty-state">
+                                    <i data-lucide="users-round" class="empty-state-icon"></i>
+                                    <h3>No Candidates Registered</h3>
+                                    <p>Get started by clicking the "Add Candidate" button to populate the database.</p>
+                                    <button class="btn btn-secondary btn-sm" id="btn-empty-state-add">
+                                        <i data-lucide="plus"></i> Add First Candidate
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+        </main>
+    </div>
+
+    <!-- Add & Edit Candidate Modal Overlay -->
+    <div class="modal-overlay" id="candidate-modal">
+        <div class="modal-card glass-card animate-slide-up">
+            <header class="modal-header">
+                <div class="header-icon-wrap">
+                    <i data-lucide="user-cog" id="modal-icon"></i>
+                </div>
+                <div>
+                    <h2 id="modal-title">Add New Candidate</h2>
+                    <p id="modal-subtitle">Enter professional details to register the candidate in the secure SQLite database.</p>
+                </div>
+                <button class="btn-close" id="btn-close-modal" aria-label="Close modal">
+                    <i data-lucide="x"></i>
+                </button>
+            </header>
+            
+            <form id="candidate-form">
+                <!-- Hidden inputs -->
+                <input type="hidden" id="candidate-id-input">
+
+                <div class="form-grid">
+                    <div class="form-group col-span-2">
+                        <label for="input-full-name">Full Name <span class="required">*</span></label>
+                        <div class="input-wrapper">
+                            <i data-lucide="user" class="input-icon"></i>
+                            <input type="text" id="input-full-name" placeholder="John Doe" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="input-email">Email Address <span class="required">*</span></label>
+                        <div class="input-wrapper">
+                            <i data-lucide="mail" class="input-icon"></i>
+                            <input type="email" id="input-email" placeholder="john.doe@example.com" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="input-phone">Phone Number</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="phone" class="input-icon"></i>
+                            <input type="tel" id="input-phone" placeholder="+1 (555) 019-2834">
+                        </div>
+                    </div>
+
+                    <div class="form-group col-span-2">
+                        <label for="input-college">College / University</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="graduation-cap" class="input-icon"></i>
+                            <input type="text" id="input-college" placeholder="Stanford University">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="input-experience">Years of Experience <span class="required">*</span></label>
+                        <div class="input-wrapper">
+                            <i data-lucide="briefcase" class="input-icon"></i>
+                            <input type="number" id="input-experience" min="0" max="50" value="0" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group col-span-2">
+                        <label for="input-skills">Skills (Comma Separated) <span class="required">*</span></label>
+                        <div class="input-wrapper">
+                            <i data-lucide="code-2" class="input-icon"></i>
+                            <input type="text" id="input-skills" placeholder="Python, FastAPI, SQL, Docker, React" required>
+                        </div>
+                        <span class="field-hint">Press comma (,) or enter between skills to separate.</span>
+                    </div>
+                </div>
+
+                <!-- Form error display -->
+                <div class="form-error-alert hidden" id="form-error-alert">
+                    <i data-lucide="alert-circle"></i>
+                    <span id="form-error-message">Error message details go here.</span>
+                </div>
+
+                <footer class="modal-footer">
+                    <button type="button" class="btn btn-ghost" id="btn-cancel-modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="btn-submit-form">
+                        <span id="submit-btn-text">Register Candidate</span>
+                        <i data-lucide="arrow-right" class="btn-arrow"></i>
+                    </button>
+                </footer>
+            </form>
+        </div>
+    </div>
+
+    <!-- Notification Toast alerts -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- Initialize icons after script loading -->
+    <script>
+        // Make lucide available immediately
+        lucide.createIcons();
+    </script>
+    
+    <!-- Application Script -->
+    <script src="js/app.js"></script>
+</body>
+</html>
