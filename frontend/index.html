@@ -40,10 +40,11 @@
                     <i data-lucide="layout-dashboard"></i>
                     <span>Dashboard</span>
                 </a>
-                <a href="#" class="menu-item disabled" title="Available in Phase 2">
+                <!-- Phase 2: Interviews unlocked -->
+                <a href="#" class="menu-item" id="nav-interviews">
                     <i data-lucide="calendar"></i>
                     <span>Interviews</span>
-                    <span class="badge badge-locked">P2</span>
+                    <span class="badge" id="interviews-nav-badge" style="background:rgba(99,102,241,0.15);color:#a5b4fc;border:1px solid rgba(99,102,241,0.25);margin-left:auto;">0</span>
                 </a>
                 <a href="#" class="menu-item disabled" title="Available in Phase 3">
                     <i data-lucide="award"></i>
@@ -57,7 +58,7 @@
                 </a>
             </nav>
             
-            <!-- Quick Dashboard Analytics Panel (Phase 1 local metadata) -->
+            <!-- Quick Dashboard Analytics Panel -->
             <div class="sidebar-stats-card">
                 <h3>Quick Metrics</h3>
                 <div class="stat-row">
@@ -65,12 +66,16 @@
                     <span class="stat-value" id="stats-total-candidates">0</span>
                 </div>
                 <div class="stat-row">
+                    <span class="stat-label">Total Interviews</span>
+                    <span class="stat-value highlight-text" id="stats-total-interviews">0</span>
+                </div>
+                <div class="stat-row">
                     <span class="stat-label">Avg. Experience</span>
                     <span class="stat-value" id="stats-avg-experience">0 yrs</span>
                 </div>
                 <div class="stat-row">
                     <span class="stat-label">System Mode</span>
-                    <span class="stat-value highlight-text">Phase 1</span>
+                    <span class="stat-value highlight-text">Phase 2</span>
                 </div>
             </div>
 
@@ -87,76 +92,141 @@
 
         <!-- Main Dashboard Workspace -->
         <main class="app-main">
-            <!-- Header section -->
-            <header class="app-header">
-                <div class="header-title">
-                    <span class="breadcrumb">Overview / Candidates</span>
-                    <h1 id="main-heading">Candidate Management</h1>
-                </div>
-                <div class="header-actions">
-                    <button class="btn btn-primary" id="btn-open-add-modal">
-                        <i data-lucide="user-plus"></i>
-                        <span>Add Candidate</span>
-                    </button>
-                </div>
-            </header>
 
-            <!-- Dashboard Control Filters (Search & Actions) -->
-            <section class="dashboard-controls">
-                <div class="search-box">
-                    <i data-lucide="search" class="search-icon"></i>
-                    <input type="text" id="search-input" placeholder="Search by name, skills, or college...">
-                </div>
-                
-                <div class="filter-summary">
-                    <span class="filter-count" id="candidate-count-summary">Showing 0 candidates</span>
-                </div>
-            </section>
+            <!-- ================================================================
+                 VIEW 1: CANDIDATE DASHBOARD (Phase 1)
+                 ================================================================ -->
+            <div id="view-dashboard" class="view-section active-view">
+                <!-- Header section -->
+                <header class="app-header">
+                    <div class="header-title">
+                        <span class="breadcrumb">Overview / Candidates</span>
+                        <h1 id="main-heading">Candidate Management</h1>
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn btn-primary" id="btn-open-add-modal">
+                            <i data-lucide="user-plus"></i>
+                            <span>Add Candidate</span>
+                        </button>
+                    </div>
+                </header>
 
-            <!-- Candidates Interactive Table Grid -->
-            <section class="table-container glass-card">
-                <table class="candidates-table" id="candidates-table-element">
-                    <thead>
-                        <tr>
-                            <th>Candidate Details</th>
-                            <th class="sortable-header" id="th-name" data-sort="full_name">
-                                <span>Name</span>
-                                <i data-lucide="chevrons-up-down" class="sort-icon"></i>
-                            </th>
-                            <th>Contact</th>
-                            <th class="sortable-header" id="th-college" data-sort="college">
-                                <span>College</span>
-                                <i data-lucide="chevrons-up-down" class="sort-icon"></i>
-                            </th>
-                            <th>Skills</th>
-                            <th class="sortable-header" id="th-experience" data-sort="experience_years">
-                                <span>Experience</span>
-                                <i data-lucide="chevrons-up-down" class="sort-icon"></i>
-                            </th>
-                            <th class="actions-header">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="candidates-tbody">
-                        <!-- Loaded dynamically via JavaScript -->
-                        <tr class="empty-state-row">
-                            <td colspan="7">
-                                <div class="table-empty-state">
-                                    <i data-lucide="users-round" class="empty-state-icon"></i>
-                                    <h3>No Candidates Registered</h3>
-                                    <p>Get started by clicking the "Add Candidate" button to populate the database.</p>
-                                    <button class="btn btn-secondary btn-sm" id="btn-empty-state-add">
-                                        <i data-lucide="plus"></i> Add First Candidate
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </section>
+                <!-- Dashboard Control Filters (Search & Actions) -->
+                <section class="dashboard-controls">
+                    <div class="search-box">
+                        <i data-lucide="search" class="search-icon"></i>
+                        <input type="text" id="search-input" placeholder="Search by name, skills, or college...">
+                    </div>
+                    
+                    <div class="filter-summary">
+                        <span class="filter-count" id="candidate-count-summary">Showing 0 candidates</span>
+                    </div>
+                </section>
+
+                <!-- Candidates Interactive Table Grid -->
+                <section class="table-container glass-card" id="candidates-table-container">
+                    <table class="candidates-table" id="candidates-table-element">
+                        <thead>
+                            <tr>
+                                <th>Candidate</th>
+                                <th class="sortable-header" id="th-name" data-sort="full_name">
+                                    <span>Name <i data-lucide="chevrons-up-down" class="sort-icon"></i></span>
+                                </th>
+                                <th>Contact</th>
+                                <th class="sortable-header" id="th-college" data-sort="college">
+                                    <span>College <i data-lucide="chevrons-up-down" class="sort-icon"></i></span>
+                                </th>
+                                <th>Skills</th>
+                                <th class="sortable-header" id="th-experience" data-sort="experience_years">
+                                    <span>Experience <i data-lucide="chevrons-up-down" class="sort-icon"></i></span>
+                                </th>
+                                <th class="actions-header">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="candidates-tbody">
+                            <!-- Loaded dynamically via JavaScript -->
+                            <tr class="empty-state-row">
+                                <td colspan="7">
+                                    <div class="table-empty-state">
+                                        <i data-lucide="users-round" class="empty-state-icon"></i>
+                                        <h3>No Candidates Registered</h3>
+                                        <p>Get started by clicking the "Add Candidate" button to populate the database.</p>
+                                        <button class="btn btn-secondary btn-sm" id="btn-empty-state-add">
+                                            <i data-lucide="plus"></i> Add First Candidate
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </section>
+            </div>
+
+            <!-- ================================================================
+                 VIEW 2: INTERVIEWS PAGE (Phase 2)
+                 ================================================================ -->
+            <div id="view-interviews" class="view-section">
+                <!-- Header -->
+                <header class="app-header">
+                    <div class="header-title">
+                        <span class="breadcrumb">Overview / Interviews</span>
+                        <h1>Interview Management</h1>
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn btn-primary" id="btn-open-schedule-modal-page">
+                            <i data-lucide="calendar-plus"></i>
+                            <span>Schedule Interview</span>
+                        </button>
+                    </div>
+                </header>
+
+                <!-- Controls -->
+                <section class="dashboard-controls">
+                    <div class="search-box">
+                        <i data-lucide="search" class="search-icon"></i>
+                        <input type="text" id="interview-search-input" placeholder="Search by candidate, interviewer, or type...">
+                    </div>
+                    <div class="filter-summary">
+                        <span class="filter-count" id="interview-count-summary">Showing 0 interviews</span>
+                    </div>
+                </section>
+
+                <!-- Interviews Table -->
+                <section class="table-container glass-card">
+                    <table class="interviews-table" id="interviews-table-element">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Candidate</th>
+                                <th>Type</th>
+                                <th>Interviewer</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Notes</th>
+                                <th class="actions-header">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="interviews-tbody">
+                            <tr class="empty-state-row">
+                                <td colspan="8">
+                                    <div class="table-empty-state">
+                                        <i data-lucide="calendar-x" class="empty-state-icon"></i>
+                                        <h3>No Interviews Scheduled</h3>
+                                        <p>Schedule the first interview by clicking "Schedule Interview" above, or use the calendar icon on a candidate row.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </section>
+            </div>
+
         </main>
     </div>
 
-    <!-- Add & Edit Candidate Modal Overlay -->
+    <!-- ========================================================================
+         MODAL 1: Add & Edit Candidate
+         ======================================================================== -->
     <div class="modal-overlay" id="candidate-modal">
         <div class="modal-card glass-card animate-slide-up">
             <header class="modal-header">
@@ -244,12 +314,118 @@
         </div>
     </div>
 
+    <!-- ========================================================================
+         MODAL 2: Schedule / Edit Interview (Phase 2)
+         ======================================================================== -->
+    <div class="modal-overlay" id="interview-modal">
+        <div class="modal-card glass-card animate-slide-up">
+            <header class="modal-header">
+                <div class="header-icon-wrap">
+                    <i data-lucide="calendar-check"></i>
+                </div>
+                <div>
+                    <h2 id="interview-modal-title">Schedule Interview</h2>
+                    <p id="interview-modal-subtitle">Link an interview session to a candidate in the database.</p>
+                </div>
+                <button class="btn-close" id="btn-close-interview-modal" aria-label="Close interview modal">
+                    <i data-lucide="x"></i>
+                </button>
+            </header>
+
+            <form id="interview-form">
+                <input type="hidden" id="interview-id-input">
+
+                <div class="form-grid">
+
+                    <!-- Candidate selector -->
+                    <div class="form-group col-span-2">
+                        <label for="input-interview-candidate">Candidate <span class="required">*</span></label>
+                        <div class="input-wrapper">
+                            <i data-lucide="user" class="input-icon"></i>
+                            <select id="input-interview-candidate" required>
+                                <option value="">— Select Candidate —</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Interview Type -->
+                    <div class="form-group">
+                        <label for="input-interview-type">Interview Type <span class="required">*</span></label>
+                        <div class="input-wrapper">
+                            <i data-lucide="layers" class="input-icon"></i>
+                            <select id="input-interview-type" required>
+                                <option value="">— Select Type —</option>
+                                <option value="Structured">Structured</option>
+                                <option value="Unstructured">Unstructured</option>
+                                <option value="Hybrid">Hybrid</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Status -->
+                    <div class="form-group">
+                        <label for="input-interview-status">Status</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="activity" class="input-icon"></i>
+                            <select id="input-interview-status">
+                                <option value="Scheduled">Scheduled</option>
+                                <option value="Completed">Completed</option>
+                                <option value="Cancelled">Cancelled</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Interviewer Name -->
+                    <div class="form-group">
+                        <label for="input-interviewer-name">Interviewer Name <span class="required">*</span></label>
+                        <div class="input-wrapper">
+                            <i data-lucide="user-check" class="input-icon"></i>
+                            <input type="text" id="input-interviewer-name" placeholder="e.g. Dr. Sarah Chen" required>
+                        </div>
+                    </div>
+
+                    <!-- Interview Date -->
+                    <div class="form-group">
+                        <label for="input-interview-date">Interview Date <span class="required">*</span></label>
+                        <div class="input-wrapper">
+                            <i data-lucide="calendar" class="input-icon"></i>
+                            <input type="date" id="input-interview-date" required>
+                        </div>
+                    </div>
+
+                    <!-- Notes -->
+                    <div class="form-group col-span-2">
+                        <label for="input-interview-notes">Interviewer Notes</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="file-text" class="input-icon" style="top:14px;transform:none;"></i>
+                            <textarea id="input-interview-notes" placeholder="Observations, performance notes, key discussion points..."></textarea>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Form error -->
+                <div class="form-error-alert hidden" id="interview-form-error-alert">
+                    <i data-lucide="alert-circle"></i>
+                    <span id="interview-form-error-message">Error message.</span>
+                </div>
+
+                <footer class="modal-footer">
+                    <button type="button" class="btn btn-ghost" id="btn-cancel-interview-modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="btn-submit-interview-form">
+                        <span id="interview-submit-btn-text">Schedule Interview</span>
+                        <i data-lucide="arrow-right" class="btn-arrow"></i>
+                    </button>
+                </footer>
+            </form>
+        </div>
+    </div>
+
     <!-- Notification Toast alerts -->
     <div class="toast-container" id="toast-container"></div>
 
     <!-- Initialize icons after script loading -->
     <script>
-        // Make lucide available immediately
         lucide.createIcons();
     </script>
     

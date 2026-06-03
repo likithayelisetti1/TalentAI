@@ -1,6 +1,10 @@
 from sqlalchemy.orm import Session
 from . import models, schemas
 
+# =============================================================================
+# CANDIDATE CRUD (Phase 1)
+# =============================================================================
+
 def get_candidate(db: Session, candidate_id: int):
     """Retrieve a single candidate by their primary key ID."""
     return db.query(models.Candidate).filter(models.Candidate.id == candidate_id).first()
@@ -51,3 +55,83 @@ def delete_candidate(db: Session, candidate_id: int):
     db.delete(db_candidate)
     db.commit()
     return db_candidate
+
+
+# =============================================================================
+# INTERVIEW CRUD (Phase 2)
+# =============================================================================
+
+def _attach_candidate_name(db_interview):
+    """Helper: attach candidate_name field from the ORM relationship."""
+    if db_interview and db_interview.candidate:
+        db_interview.candidate_name = db_interview.candidate.full_name
+    elif db_interview:
+        db_interview.candidate_name = "Unknown"
+    return db_interview
+
+def create_interview(db: Session, interview: schemas.InterviewCreate):
+    """Create a new interview record linked to a candidate."""
+    db_interview = models.Interview(
+        candidate_id=interview.candidate_id,
+        interview_type=interview.interview_type,
+        interviewer_name=interview.interviewer_name,
+        interview_date=interview.interview_date,
+        status=interview.status,
+        notes=interview.notes
+    )
+    db.add(db_interview)
+    db.commit()
+    db.refresh(db_interview)
+    return _attach_candidate_name(db_interview)
+
+def get_interview(db: Session, interview_id: int):
+    """Retrieve a single interview by its primary key ID."""
+    db_interview = db.query(models.Interview).filter(models.Interview.id == interview_id).first()
+    return _attach_candidate_name(db_interview)
+
+def get_interviews(db: Session, skip: int = 0, limit: int = 200):
+    """Retrieve all interviews across all candidates."""
+    interviews = db.query(models.Interview).offset(skip).limit(limit).all()
+    for interview in interviews:
+        _attach_candidate_name(interview)
+    return interviews
+
+def get_interviews_by_candidate(db: Session, candidate_id: int):
+    """Retrieve all interviews for a specific candidate, ordered newest first."""
+    interviews = (
+        db.query(models.Interview)
+        .filter(models.Interview.candidate_id == candidate_id)
+        .order_by(models.Interview.interview_date.desc())
+        .all()
+    )
+    for interview in interviews:
+        _attach_candidate_name(interview)
+    return interviews
+
+def update_interview(db: Session, interview_id: int, interview_update: schemas.InterviewUpdate):
+    """Update fields of an existing interview (partial update supported)."""
+    db_interview = db.query(models.Interview).filter(models.Interview.id == interview_id).first()
+    if not db_interview:
+        return None
+    
+    update_data = interview_update.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(db_interview, key, value)
+    
+    db.commit()
+    db.refresh(db_interview)
+    return _attach_candidate_name(db_interview)
+
+def delete_interview(db: Session, interview_id: int):
+    """Delete an interview record from the database."""
+    db_interview = db.query(models.Interview).filter(models.Interview.id == interview_id).first()
+    if not db_interview:
+        return None
+    db.delete(db_interview)
+    db.commit()
+    return db_interview
+
+def get_interview_count(db: Session) -> int:
+    """Return total number of interviews in the database."""
+    return db.query(models.Interview).count()
+
