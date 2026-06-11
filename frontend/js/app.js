@@ -1,8 +1,11 @@
 /**
- * INTERVIEW INTELLIGENCE PLATFORM - CLIENT SCRIPT (PHASE 2)
+ * INTERVIEW INTELLIGENCE PLATFORM - CLIENT SCRIPT (PHASE 4+5)
  * Handles:
  *  - Phase 1: Candidate state management, search, sorting, CRUD
  *  - Phase 2: Interview scheduling, history drawer, interviews page, interview CRUD
+ *  - Phase 3: Candidate evaluation (scoring), scorecards, evaluation table
+ *  - Phase 4: Comparison dashboard — ranked table with per-category winner highlights
+ *  - Phase 5: Reports & Export — CSV download and print report
  */
 
 // ============================================================================
@@ -29,11 +32,19 @@ const state = {
     interviewSearchQuery: "",
     isEditingInterview: false,
     activeInterviewEditId: null,
-    activeScheduleCandidateId: null, // pre-fill candidate when scheduling from a row
-    openDrawerCandidateId: null,     // which candidate's history drawer is open
+    activeScheduleCandidateId: null,
+    openDrawerCandidateId: null,
 
     // --- View ---
-    currentView: "dashboard" // "dashboard" or "interviews"
+    currentView: "dashboard", // "dashboard", "interviews", "evaluations", "compare", "reports"
+
+    // --- Evaluations (Phase 3) ---
+    evaluations: [],
+
+    // --- Comparison (Phase 4) ---
+    compareData: [],
+    compareSortMetric: "overall_score",
+    compareSortDir: "desc"
 };
 
 // ============================================================================
@@ -43,15 +54,22 @@ const DOM = {
     // Views
     viewDashboard: document.getElementById("view-dashboard"),
     viewInterviews: document.getElementById("view-interviews"),
+    viewEvaluations: document.getElementById("view-evaluations"),
+    viewCompare: document.getElementById("view-compare"),
+    viewReports: document.getElementById("view-reports"),
 
     // Sidebar nav
     navDashboard: document.getElementById("nav-dashboard"),
     navInterviews: document.getElementById("nav-interviews"),
+    navEvaluations: document.getElementById("nav-evaluations"),
+    navCompare: document.getElementById("nav-compare"),
+    navReports: document.getElementById("nav-reports"),
     interviewsNavBadge: document.getElementById("interviews-nav-badge"),
 
     // Sidebar stats
     statsTotalCandidates: document.getElementById("stats-total-candidates"),
     statsTotalInterviews: document.getElementById("stats-total-interviews"),
+    statsTotalEvaluations: document.getElementById("stats-total-evaluations"),
     statsAvgExperience: document.getElementById("stats-avg-experience"),
 
     // Candidate table
@@ -136,6 +154,18 @@ function registerEventListeners() {
         e.preventDefault();
         switchView("interviews");
     });
+    DOM.navEvaluations.addEventListener("click", (e) => {
+        e.preventDefault();
+        switchView("evaluations");
+    });
+    DOM.navCompare.addEventListener("click", (e) => {
+        e.preventDefault();
+        switchView("compare");
+    });
+    DOM.navReports.addEventListener("click", (e) => {
+        e.preventDefault();
+        switchView("reports");
+    });
 
     // ---- Candidate search & sort ----
     DOM.searchInput.addEventListener("input", handleCandidateSearch);
@@ -164,13 +194,35 @@ function registerEventListeners() {
     });
     DOM.interviewForm.addEventListener("submit", handleInterviewFormSubmit);
 
+    // ---- Export CSV button (on evaluations page) ----
+    const btnExportCsv = document.getElementById("btn-export-csv");
+    if (btnExportCsv) btnExportCsv.addEventListener("click", exportCandidatesCSV);
+
+    // ---- Report page buttons ----
+    const btnReportExportCsv = document.getElementById("btn-report-export-csv");
+    if (btnReportExportCsv) btnReportExportCsv.addEventListener("click", exportCandidatesCSV);
+    const btnReportPrint = document.getElementById("btn-report-print");
+    if (btnReportPrint) btnReportPrint.addEventListener("click", printReport);
+
+    // ---- Compare table — sortable column headers ----
+    document.querySelectorAll(".compare-sort-header").forEach(th => {
+        th.addEventListener("click", () => {
+            const metric = th.dataset.metric;
+            if (state.compareSortMetric === metric) {
+                state.compareSortDir = state.compareSortDir === "desc" ? "asc" : "desc";
+            } else {
+                state.compareSortMetric = metric;
+                state.compareSortDir = "desc";
+            }
+            renderCompareTable();
+        });
+    });
+
     // ---- Global delegated clicks (dynamic buttons) ----
     document.addEventListener("click", (e) => {
-        // Empty state add candidate button
         if (e.target && e.target.id === "btn-empty-state-add") {
             openCandidateModal(false);
         }
-        // Clear candidate search button
         if (e.target && e.target.id === "btn-clear-search") {
             DOM.searchInput.value = "";
             state.searchQuery = "";
@@ -185,19 +237,25 @@ function registerEventListeners() {
 // ============================================================================
 function switchView(view) {
     state.currentView = view;
+    const allViews = ["dashboard", "interviews", "evaluations", "compare", "reports"];
 
     // Toggle sections
-    DOM.viewDashboard.classList.toggle("active-view", view === "dashboard");
-    DOM.viewInterviews.classList.toggle("active-view", view === "interviews");
+    allViews.forEach(v => {
+        const el = document.getElementById(`view-${v}`);
+        if (el) el.classList.toggle("active-view", v === view);
+    });
 
     // Toggle nav active state
-    DOM.navDashboard.classList.toggle("active", view === "dashboard");
-    DOM.navInterviews.classList.toggle("active", view === "interviews");
+    ["dashboard", "interviews", "evaluations", "compare", "reports"].forEach(v => {
+        const nav = DOM[`nav${v.charAt(0).toUpperCase() + v.slice(1)}`];
+        if (nav) nav.classList.toggle("active", v === view);
+    });
 
-    // Refresh the relevant view's data
-    if (view === "interviews") {
-        fetchInterviews();
-    }
+    // Refresh view-specific data
+    if (view === "interviews") fetchInterviews();
+    if (view === "evaluations") fetchEvaluations();
+    if (view === "compare") fetchCompareData();
+    if (view === "reports") populateReportStats();
 }
 
 // ============================================================================
@@ -394,6 +452,9 @@ function renderCandidatesTable() {
             <td><span class="exp-badge">${candidate.experience_years} ${candidate.experience_years === 1 ? "yr" : "yrs"}</span></td>
             <td>
                 <div class="actions-cell">
+                    <button class="btn-icon-only btn-evaluate" title="Evaluate Candidate" data-id="${candidate.id}" style="color:var(--color-warning);border-color:rgba(245,158,11,0.3);background:rgba(245,158,11,0.05);">
+                        <i data-lucide="star"></i>
+                    </button>
                     <button class="btn-icon-only btn-schedule" title="Schedule Interview" data-id="${candidate.id}">
                         <i data-lucide="calendar-plus"></i>
                     </button>
@@ -436,6 +497,9 @@ function renderCandidatesTable() {
     );
     DOM.tbody.querySelectorAll(".btn-delete").forEach(btn =>
         btn.addEventListener("click", () => deleteCandidate(parseInt(btn.dataset.id), btn.dataset.name))
+    );
+    DOM.tbody.querySelectorAll(".btn-evaluate").forEach(btn =>
+        btn.addEventListener("click", () => openEvalModal(parseInt(btn.dataset.id)))
     );
     DOM.tbody.querySelectorAll(".btn-schedule").forEach(btn =>
         btn.addEventListener("click", () => openInterviewModal(false, parseInt(btn.dataset.id)))
@@ -522,6 +586,9 @@ async function fetchStats() {
         DOM.statsTotalInterviews.textContent = data.total_interviews;
         DOM.statsAvgExperience.textContent = `${data.avg_experience} yrs`;
         DOM.interviewsNavBadge.textContent = data.total_interviews;
+        if (DOM.statsTotalEvaluations) {
+            DOM.statsTotalEvaluations.textContent = data.total_evaluations ?? 0;
+        }
     } catch (error) {
         console.error("Error fetching stats:", error);
     }
@@ -732,15 +799,70 @@ async function loadHistoryDrawer(candidateId, candidateName) {
     if (!drawer) return;
 
     const inner = drawer.querySelector(".history-drawer-inner");
-    inner.innerHTML = `<div class="drawer-loading"><div class="spinner"></div> Loading interview history...</div>`;
+    inner.innerHTML = `<div class="drawer-loading"><div class="spinner"></div> Loading candidate data...</div>`;
 
     try {
-        const interviews = await fetchCandidateInterviews(candidateId);
+        const [interviews, evaluationResp] = await Promise.all([
+            fetchCandidateInterviews(candidateId).catch(() => []),
+            fetch(`${API_BASE_URL}/candidates/${candidateId}/evaluation`).catch(() => null)
+        ]);
+        
+        let evaluation = null;
+        if (evaluationResp && evaluationResp.ok) {
+            evaluation = await evaluationResp.json();
+        }
+
         const name = candidateName || state.candidates.find(c => c.id === candidateId)?.full_name || "Candidate";
+        let evalHTML = "";
+
+        if (evaluation) {
+            let badgeClass = "poor";
+            let badgeText = "Poor";
+            if (evaluation.overall_score >= 85) { badgeClass = "excellent"; badgeText = "Excellent"; }
+            else if (evaluation.overall_score >= 70) { badgeClass = "good"; badgeText = "Good"; }
+            else if (evaluation.overall_score >= 50) { badgeClass = "average"; badgeText = "Average"; }
+
+            evalHTML = `
+            <div class="eval-summary-card">
+                <div class="eval-summary-header">
+                    <div>
+                        <h5 style="margin:0;font-size:0.95rem;color:var(--color-warning);">Evaluation Scorecard</h5>
+                        <span style="font-size:0.75rem;color:var(--text-muted);">${evaluation.comments || "No comments"}</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:12px;">
+                        <span class="eval-badge ${badgeClass}">${badgeText}</span>
+                        <div style="font-size:1.8rem;font-weight:800;color:var(--text-primary);">${evaluation.overall_score}%</div>
+                        <button class="btn btn-secondary btn-sm" onclick="openEvalModal(${candidateId})">
+                            <i data-lucide="pencil" style="width:14px;height:14px"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="score-bars-container">
+                    ${["Technical", "Communication", "Confidence", "Problem_Solving", "Leadership", "Learning_Ability"].map(key => {
+                        const score = evaluation[key.toLowerCase()] || 0;
+                        return `
+                        <div class="score-bar-wrapper">
+                            <div class="score-bar-label"><span>${key.replace("_", " ")}</span> <span>${score}%</span></div>
+                            <div class="score-bar-track">
+                                <div class="score-bar-fill" style="width: ${score}%; background: ${score >= 70 ? 'var(--color-success)' : score >= 50 ? 'var(--color-warning)' : 'var(--color-danger)'};"></div>
+                            </div>
+                        </div>`
+                    }).join("")}
+                </div>
+            </div>`;
+        } else {
+            evalHTML = `
+            <div class="eval-summary-card" style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.02);border-style:dashed;">
+                <span style="color:var(--text-muted);font-size:0.85rem;"><i data-lucide="star" style="width:16px;height:16px;vertical-align:middle;margin-right:6px"></i>No evaluation scorecard exists for this candidate.</span>
+                <button class="btn btn-primary btn-sm" style="background-color:var(--color-warning);border-color:var(--color-warning);color:#000;" onclick="openEvalModal(${candidateId})">
+                    Evaluate Now
+                </button>
+            </div>`;
+        }
 
         if (interviews.length === 0) {
-            inner.innerHTML = `
-                <div class="history-drawer-header">
+            inner.innerHTML = evalHTML + `
+                <div class="history-drawer-header" style="margin-top:20px;">
                     <i data-lucide="clock-3"></i>
                     <h4>${name} — Interview History</h4>
                 </div>
@@ -774,8 +896,8 @@ async function loadHistoryDrawer(candidateId, candidateName) {
                 </div>`;
         }).join("");
 
-        inner.innerHTML = `
-            <div class="history-drawer-header">
+        inner.innerHTML = evalHTML + `
+            <div class="history-drawer-header" style="margin-top:20px;">
                 <i data-lucide="clock-3"></i>
                 <h4>${name} — ${interviews.length} Interview${interviews.length !== 1 ? "s" : ""}</h4>
                 <button class="btn btn-secondary btn-sm" style="margin-left:auto" onclick="openInterviewModal(false, ${candidateId})">
@@ -785,7 +907,7 @@ async function loadHistoryDrawer(candidateId, candidateName) {
             <div class="interview-history-list">${itemsHTML}</div>`;
         lucide.createIcons();
     } catch (error) {
-        inner.innerHTML = `<p style="color:var(--color-danger);font-size:0.85rem">Failed to load interview history.</p>`;
+        inner.innerHTML = `<p style="color:var(--color-danger);font-size:0.85rem">Failed to load candidate details.</p>`;
     }
 }
 
@@ -878,6 +1000,121 @@ function updateInterviewBadge() {
 }
 
 // ============================================================================
+// EVALUATIONS PAGE — FETCH & RENDER (PHASE 3)
+// ============================================================================
+
+async function fetchEvaluations() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/evaluations`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        state.evaluations = await response.json();
+        renderEvaluationsTable();
+    } catch (err) {
+        console.error("Error fetching evaluations:", err);
+    }
+}
+
+function renderEvaluationsTable() {
+    const tbody = document.getElementById("evaluations-tbody");
+    const countEl = document.getElementById("eval-count-summary");
+    if (!tbody) return;
+
+    tbody.innerHTML = "";
+
+    if (state.evaluations.length === 0) {
+        tbody.innerHTML = `
+            <tr class="empty-state-row">
+                <td colspan="9">
+                    <div class="table-empty-state">
+                        <i data-lucide="star" class="empty-state-icon"></i>
+                        <h3>No Evaluations Yet</h3>
+                        <p>Go to the Dashboard and click the Star icon on any candidate to evaluate them.</p>
+                    </div>
+                </td>
+            </tr>`;
+        lucide.createIcons();
+        if (countEl) countEl.textContent = "No evaluations recorded";
+        return;
+    }
+
+    state.evaluations.forEach(ev => {
+        const name = ev.candidate_name || `Candidate #${ev.candidate_id}`;
+        const initials = name.split(" ").map(n => n[0]).slice(0, 2).join("").toUpperCase();
+
+        let badgeClass = "poor", badgeText = "Poor";
+        if (ev.overall_score >= 85) { badgeClass = "excellent"; badgeText = "Excellent"; }
+        else if (ev.overall_score >= 70) { badgeClass = "good"; badgeText = "Good"; }
+        else if (ev.overall_score >= 50) { badgeClass = "average"; badgeText = "Average"; }
+
+        const scoreBar = (score) => `
+            <div style="display:flex;flex-direction:column;gap:3px;">
+                <span style="font-weight:700;font-size:0.9rem;">${score}</span>
+                <div style="width:50px;height:5px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden;">
+                    <div style="width:${score}%;height:100%;background:${score >= 70 ? 'var(--color-success)' : score >= 50 ? 'var(--color-warning)' : 'var(--color-danger)'};border-radius:3px;"></div>
+                </div>
+            </div>`;
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td>
+                <div class="candidate-meta">
+                    <div class="candidate-avatar">${initials}</div>
+                    <div>
+                        <div style="font-weight:600;color:#fff;">${name}</div>
+                        <span class="eval-badge ${badgeClass}" style="font-size:0.65rem;">${badgeText}</span>
+                    </div>
+                </div>
+            </td>
+            <td>${scoreBar(ev.technical)}</td>
+            <td>${scoreBar(ev.communication)}</td>
+            <td>${scoreBar(ev.confidence)}</td>
+            <td>${scoreBar(ev.problem_solving)}</td>
+            <td>${scoreBar(ev.leadership)}</td>
+            <td>${scoreBar(ev.learning_ability)}</td>
+            <td>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <span style="font-size:1.5rem;font-weight:800;font-family:var(--font-heading);color:var(--color-warning);">${ev.overall_score}%</span>
+                </div>
+            </td>
+            <td>
+                <div class="actions-cell">
+                    <button class="btn-icon-only btn-edit btn-eval-edit" title="Edit Evaluation" data-id="${ev.candidate_id}">
+                        <i data-lucide="pencil"></i>
+                    </button>
+                    <button class="btn-icon-only btn-delete btn-eval-delete" title="Delete Evaluation" data-id="${ev.id}" data-name="${name}">
+                        <i data-lucide="trash-2"></i>
+                    </button>
+                </div>
+            </td>`;
+        tbody.appendChild(tr);
+    });
+
+    tbody.querySelectorAll(".btn-eval-edit").forEach(btn =>
+        btn.addEventListener("click", () => openEvalModal(parseInt(btn.dataset.id)))
+    );
+    tbody.querySelectorAll(".btn-eval-delete").forEach(btn =>
+        btn.addEventListener("click", () => deleteEvaluation(parseInt(btn.dataset.id), btn.dataset.name))
+    );
+
+    lucide.createIcons();
+    if (countEl) countEl.textContent = `${state.evaluations.length} evaluation${state.evaluations.length !== 1 ? "s" : ""} recorded`;
+}
+
+async function deleteEvaluation(evalId, candidateName) {
+    if (!confirm(`Delete evaluation for "${candidateName}"? This cannot be undone.`)) return;
+    try {
+        const resp = await fetch(`${API_BASE_URL}/evaluations/${evalId}`, { method: "DELETE" });
+        if (!resp.ok) throw new Error("Delete failed");
+        showToast("Evaluation Deleted", `Scorecard for ${candidateName} removed.`, "info");
+        await fetchEvaluations();
+        await fetchStats();
+        if (state.openDrawerCandidateId) loadHistoryDrawer(state.openDrawerCandidateId);
+    } catch (err) {
+        showToast("Error", "Could not delete the evaluation.", "error");
+    }
+}
+
+// ============================================================================
 // HELPER UTILITIES
 // ============================================================================
 
@@ -931,4 +1168,276 @@ function showToast(title, text, type = "success") {
         toast.classList.remove("show");
         setTimeout(() => toast.remove(), 400);
     }, 4500);
+}
+
+// ============================================================================
+// PHASE 3: EVALUATION LOGIC
+// ============================================================================
+
+const evalModal = document.getElementById("evaluation-modal");
+const evalForm = document.getElementById("evaluation-form");
+const evalCandidateId = document.getElementById("eval-candidate-id");
+const evalId = document.getElementById("eval-id");
+const evalScoreDisplay = document.getElementById("eval-overall-score-display");
+const evalComments = document.getElementById("eval-comments");
+
+const metrics = ["technical", "communication", "confidence", "problem-solving", "leadership", "learning"];
+const evalInputs = {};
+
+document.addEventListener("DOMContentLoaded", () => {
+    metrics.forEach(m => {
+        evalInputs[m] = document.getElementById(`eval-${m}`);
+        const display = document.getElementById(`val-${m}`);
+        if(evalInputs[m]) {
+            evalInputs[m].addEventListener("input", (e) => {
+                display.textContent = e.target.value;
+                updateOverallScorePreview();
+            });
+        }
+    });
+
+    const btnCloseEval = document.getElementById("btn-close-eval-modal");
+    if(btnCloseEval) btnCloseEval.addEventListener("click", closeEvalModal);
+    
+    const btnCancelEval = document.getElementById("btn-cancel-eval-modal");
+    if(btnCancelEval) btnCancelEval.addEventListener("click", closeEvalModal);
+    
+    if(evalForm) evalForm.addEventListener("submit", handleEvalSubmit);
+});
+
+function updateOverallScorePreview() {
+    const sum = metrics.reduce((acc, m) => acc + parseInt(evalInputs[m].value || 0), 0);
+    const avg = Math.round(sum / metrics.length);
+    evalScoreDisplay.textContent = `${avg}%`;
+}
+
+async function openEvalModal(candidateId) {
+    evalCandidateId.value = candidateId;
+    evalForm.reset();
+    metrics.forEach(m => {
+        document.getElementById(`val-${m}`).textContent = "0";
+    });
+    updateOverallScorePreview();
+    document.getElementById("eval-form-error-alert").classList.add("hidden");
+
+    // Fetch existing evaluation
+    try {
+        const resp = await fetch(`${API_BASE_URL}/candidates/${candidateId}/evaluation`);
+        if (resp.ok) {
+            const data = await resp.json();
+            evalId.value = data.id;
+            evalInputs["technical"].value = data.technical;
+            evalInputs["communication"].value = data.communication;
+            evalInputs["confidence"].value = data.confidence;
+            evalInputs["problem-solving"].value = data.problem_solving;
+            evalInputs["leadership"].value = data.leadership;
+            evalInputs["learning"].value = data.learning_ability;
+            evalComments.value = data.comments || "";
+            
+            metrics.forEach(m => {
+                document.getElementById(`val-${m}`).textContent = evalInputs[m].value;
+            });
+            updateOverallScorePreview();
+            document.getElementById("eval-submit-btn-text").textContent = "Update Evaluation";
+        } else {
+            evalId.value = "";
+            document.getElementById("eval-submit-btn-text").textContent = "Save Evaluation";
+        }
+    } catch (e) {
+        console.error(e);
+    }
+
+    evalModal.classList.add("open");
+    lucide.createIcons();
+}
+
+function closeEvalModal() {
+    evalModal.classList.remove("open");
+}
+
+async function handleEvalSubmit(e) {
+    e.preventDefault();
+    document.getElementById("eval-form-error-alert").classList.add("hidden");
+
+    const candidateId = parseInt(evalCandidateId.value);
+    const existingId = evalId.value;
+
+    const payload = {
+        candidate_id: candidateId,
+        technical: parseInt(evalInputs["technical"].value),
+        communication: parseInt(evalInputs["communication"].value),
+        confidence: parseInt(evalInputs["confidence"].value),
+        problem_solving: parseInt(evalInputs["problem-solving"].value),
+        leadership: parseInt(evalInputs["leadership"].value),
+        learning_ability: parseInt(evalInputs["learning"].value),
+        comments: evalComments.value.trim()
+    };
+
+    const url = existingId ? `${API_BASE_URL}/evaluations/${existingId}` : `${API_BASE_URL}/evaluations`;
+    const method = existingId ? "PUT" : "POST";
+
+    try {
+        const resp = await fetch(url, {
+            method,
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+        const result = await resp.json();
+        if (!resp.ok) throw new Error(result.detail || "Failed to save evaluation.");
+
+        showToast("Success", "Candidate evaluation saved.", "success");
+        closeEvalModal();
+        
+        if (state.openDrawerCandidateId === candidateId) {
+            loadHistoryDrawer(candidateId);
+        }
+    } catch (err) {
+        document.getElementById("eval-form-error-message").textContent = err.message;
+        document.getElementById("eval-form-error-alert").classList.remove("hidden");
+    }
+}
+
+// ============================================================================
+// PHASE 4: COMPARISON DASHBOARD
+// ============================================================================
+
+async function fetchCompareData() {
+    const tbody = document.getElementById("compare-tbody");
+    const summary = document.getElementById("compare-count-summary");
+    if (tbody) tbody.innerHTML = `<tr><td colspan="9"><div class="drawer-loading"><div class="spinner"></div> Loading comparison data...</div></td></tr>`;
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/compare`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        state.compareData = await response.json();
+        renderCompareTable();
+    } catch (err) {
+        console.error("Error fetching compare data:", err);
+        if (tbody) tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;color:var(--color-danger);padding:30px;">Failed to load comparison data.</td></tr>`;
+    }
+}
+
+function renderCompareTable() {
+    const tbody = document.getElementById("compare-tbody");
+    const summary = document.getElementById("compare-count-summary");
+    if (!tbody) return;
+
+    tbody.innerHTML = "";
+
+    if (state.compareData.length === 0) {
+        tbody.innerHTML = `
+            <tr class="empty-state-row">
+                <td colspan="9">
+                    <div class="table-empty-state">
+                        <i data-lucide="bar-chart-3" class="empty-state-icon"></i>
+                        <h3>No Data to Compare</h3>
+                        <p>Evaluate at least 2 candidates using the ⭐ Star icon on the Dashboard.</p>
+                    </div>
+                </td>
+            </tr>`;
+        lucide.createIcons();
+        if (summary) summary.textContent = "No evaluated candidates";
+        return;
+    }
+
+    // Sort by selected metric
+    const metrics = ["technical", "communication", "confidence", "problem_solving", "leadership", "learning_ability", "overall_score"];
+    const sorted = [...state.compareData].sort((a, b) => {
+        const aVal = a[state.compareSortMetric] ?? 0;
+        const bVal = b[state.compareSortMetric] ?? 0;
+        return state.compareSortDir === "desc" ? bVal - aVal : aVal - bVal;
+    });
+
+    // Find winner for each category (highest score per column)
+    const categoryKeys = ["technical", "communication", "confidence", "problem_solving", "leadership", "learning_ability"];
+    const winners = {};
+    categoryKeys.forEach(key => {
+        const maxScore = Math.max(...state.compareData.map(c => c[key] ?? 0));
+        winners[key] = maxScore;
+    });
+
+    sorted.forEach((c, index) => {
+        const actualRank = state.compareData.findIndex(d => d.candidate_id === c.candidate_id) + 1;
+        const rankClass = actualRank === 1 ? "rank-1" : actualRank === 2 ? "rank-2" : actualRank === 3 ? "rank-3" : "rank-other";
+        const overallClass = c.overall_score >= 85 ? "score-excellent" : c.overall_score >= 70 ? "score-good" : c.overall_score >= 50 ? "score-average" : "score-poor";
+        const initials = c.candidate_name.split(" ").map(n => n[0]).slice(0, 2).join("").toUpperCase();
+
+        const scoreCell = (key) => {
+            const score = c[key] ?? 0;
+            const isWinner = score === winners[key] && state.compareData.length > 1;
+            const color = score >= 70 ? "var(--color-success)" : score >= 50 ? "var(--color-warning)" : "var(--color-danger)";
+            const cellClass = isWinner ? "cell-winner" : "";
+            return `<td class="${cellClass}">
+                <div class="score-chip">
+                    <span class="score-chip-value">${score}</span>
+                    <div class="score-chip-bar"><div class="score-chip-fill" style="width:${score}%;background:${color};"></div></div>
+                </div>
+            </td>`;
+        };
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td><span class="rank-badge ${rankClass}">${actualRank}</span></td>
+            <td>
+                <div class="candidate-meta">
+                    <div class="candidate-avatar">${initials}</div>
+                    <div>
+                        <div style="font-weight:600;color:#fff;">${c.candidate_name}</div>
+                        <span style="font-size:0.75rem;color:var(--text-muted);">${c.college || ""} ${c.experience_years ? "· " + c.experience_years + " yrs" : ""}</span>
+                    </div>
+                </div>
+            </td>
+            ${scoreCell("technical")}
+            ${scoreCell("communication")}
+            ${scoreCell("confidence")}
+            ${scoreCell("problem_solving")}
+            ${scoreCell("leadership")}
+            ${scoreCell("learning_ability")}
+            <td><span class="overall-score-pill ${overallClass}">${c.overall_score}%</span></td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    lucide.createIcons();
+    if (summary) summary.textContent = `${sorted.length} candidate${sorted.length !== 1 ? "s" : ""} ranked`;
+}
+
+// ============================================================================
+// PHASE 5: EXPORT & REPORTS
+// ============================================================================
+
+function exportCandidatesCSV() {
+    showToast("Generating CSV", "Preparing your download...", "info");
+    // Trigger backend CSV download
+    const link = document.createElement("a");
+    link.href = `${API_BASE_URL}/export/candidates`;
+    link.download = "talent_ai_candidates.csv";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => showToast("CSV Downloaded", "talent_ai_candidates.csv saved.", "success"), 1000);
+}
+
+function printReport() {
+    // Switch to compare view first so print shows it
+    switchView("compare");
+    fetchCompareData().then(() => {
+        setTimeout(() => window.print(), 600);
+    });
+}
+
+async function populateReportStats() {
+    try {
+        const resp = await fetch(`${API_BASE_URL}/stats`);
+        if (!resp.ok) return;
+        const data = await resp.json();
+        const c = document.getElementById("report-stat-candidates");
+        const i = document.getElementById("report-stat-interviews");
+        const e = document.getElementById("report-stat-evaluations");
+        if (c) c.textContent = data.total_candidates;
+        if (i) i.textContent = data.total_interviews;
+        if (e) e.textContent = data.total_evaluations ?? 0;
+    } catch (err) {
+        console.error("Error loading report stats:", err);
+    }
 }

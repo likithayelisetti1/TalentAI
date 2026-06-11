@@ -191,7 +191,8 @@ def get_stats(db: Session = Depends(get_db)):
     candidates = crud.get_candidates(db, limit=10000)
     total_candidates = len(candidates)
     total_interviews = crud.get_interview_count(db)
-    
+    total_evaluations = db.query(models.Evaluation).count()
+
     avg_experience = 0
     if total_candidates > 0:
         avg_experience = round(
@@ -201,6 +202,134 @@ def get_stats(db: Session = Depends(get_db)):
     return {
         "total_candidates": total_candidates,
         "total_interviews": total_interviews,
+        "total_evaluations": total_evaluations,
         "avg_experience": avg_experience
     }
+
+# =============================================================================
+# EVALUATION ENDPOINTS (Phase 3)
+# =============================================================================
+
+@app.post("/api/evaluations", response_model=schemas.EvaluationResponse, status_code=status.HTTP_201_CREATED)
+def create_evaluation(evaluation: schemas.EvaluationCreate, db: Session = Depends(get_db)):
+    # Verify candidate exists
+    db_candidate = crud.get_candidate(db, candidate_id=evaluation.candidate_id)
+    if not db_candidate:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Candidate not found.")
+    
+    # Check if evaluation already exists for this candidate
+    existing_eval = crud.get_evaluation_by_candidate(db, candidate_id=evaluation.candidate_id)
+    if existing_eval:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail="An evaluation already exists for this candidate. Use PUT to update it."
+        )
+        
+    return crud.create_evaluation(db=db, evaluation=evaluation)
+
+@app.get("/api/evaluations", response_model=List[schemas.EvaluationResponse])
+def read_all_evaluations(db: Session = Depends(get_db)):
+    """Return all evaluation scorecards with candidate names embedded."""
+    evals = db.query(models.Evaluation).all()
+    for ev in evals:
+        if ev.candidate:
+            ev.candidate_name = ev.candidate.full_name
+        else:
+            ev.candidate_name = "Unknown"
+    return evals
+
+@app.get("/api/candidates/{candidate_id}/evaluation", response_model=schemas.EvaluationResponse)
+def read_candidate_evaluation(candidate_id: int, db: Session = Depends(get_db)):
+    db_eval = crud.get_evaluation_by_candidate(db, candidate_id=candidate_id)
+    if not db_eval:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Evaluation not found for this candidate.")
+    return db_eval
+
+@app.put("/api/evaluations/{evaluation_id}", response_model=schemas.EvaluationResponse)
+def update_evaluation(evaluation_id: int, evaluation: schemas.EvaluationUpdate, db: Session = Depends(get_db)):
+    db_eval = crud.update_evaluation(db, evaluation_id=evaluation_id, evaluation_update=evaluation)
+    if not db_eval:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Evaluation not found.")
+    return db_eval
+
+@app.delete("/api/evaluations/{evaluation_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_evaluation(evaluation_id: int, db: Session = Depends(get_db)):
+    db_eval = db.query(models.Evaluation).filter(models.Evaluation.id == evaluation_id).first()
+    if not db_eval:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Evaluation not found.")
+    db.delete(db_eval)
+    db.commit()
+    return None
+
+# =============================================================================
+# PHASE 4: COMPARISON DASHBOARD ENDPOINT
+# =============================================================================
+
+@app.get("/api/compare")
+def compare_candidates(db: Session = Depends(get_db)):
+    """Return all evaluated candidates sorted by overall score — for comparison dashboard."""
+    evals = db.query(models.Evaluation).join(models.Candidate).order_by(models.Evaluation.overall_score.desc()).all()
+    result = []
+    for rank, ev in enumerate(evals, start=1):
+        candidate = ev.candidate
+        result.append({
+            "rank": rank,
+            "evaluation_id": ev.id,
+            "candidate_id": ev.candidate_id,
+            "candidate_name": candidate.full_name if candidate else "Unknown",
+            "college": candidate.college if candidate else None,
+            "experience_years": candidate.experience_years if candidate else 0,
+            "skills": candidate.skills if candidate else "",
+            "technical": ev.technical,
+            "communication": ev.communication,
+            "confidence": ev.confidence,
+            "problem_solving": ev.problem_solving,
+            "leadership": ev.leadership,
+            "learning_ability": ev.learning_ability,
+            "overall_score": ev.overall_score,
+            "comments": ev.comments
+        })
+    return result
+
+# =============================================================================
+# PHASE 5: REPORT / CSV EXPORT ENDPOINT
+# =============================================================================
+
+from fastapi.responses import StreamingResponse
+import csv
+import io
+
+@app.get("/api/export/candidates")
+def export_candidates_csv(db: Session = Depends(get_db)):
+    """Export all candidates with their evaluation scores as a CSV file."""
+    candidates = crud.get_candidates(db, limit=10000)
+    
+    output = io.StringIO()
+    writer = csv.writer(output)
+    
+    # Header
+    writer.writerow([
+        "ID", "Full Name", "Email", "Phone", "College", "Experience (yrs)", "Skills",
+        "Technical", "Communication", "Confidence", "Problem Solving",
+        "Leadership", "Learning Ability", "Overall Score", "Comments"
+    ])
+    
+    for c in candidates:
+        ev = crud.get_evaluation_by_candidate(db, candidate_id=c.id)
+        writer.writerow([
+            c.id, c.full_name, c.email, c.phone or "",
+            c.college or "", c.experience_years, c.skills or "",
+            ev.technical if ev else "", ev.communication if ev else "",
+            ev.confidence if ev else "", ev.problem_solving if ev else "",
+            ev.leadership if ev else "", ev.learning_ability if ev else "",
+            ev.overall_score if ev else "", ev.comments if ev else ""
+        ])
+    
+    output.seek(0)
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=talent_ai_candidates.csv"}
+    )
+
 

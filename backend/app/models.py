@@ -32,3 +32,26 @@ class Interview(Base):
     # Link back to the parent Candidate
     candidate = relationship("Candidate", back_populates="interviews")
 
+
+class Evaluation(Base):
+    __tablename__ = "evaluations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    candidate_id = Column(Integer, ForeignKey("candidates.id"), unique=True, nullable=False)
+    
+    # Core scoring categories (0-100)
+    technical = Column(Integer, default=0)
+    communication = Column(Integer, default=0)
+    confidence = Column(Integer, default=0)
+    problem_solving = Column(Integer, default=0)
+    leadership = Column(Integer, default=0)
+    learning_ability = Column(Integer, default=0)
+    
+    # Computed overall score (can be updated dynamically or recalculated on save)
+    overall_score = Column(Integer, default=0)
+    
+    comments = Column(String, nullable=True)
+    
+    candidate = relationship("Candidate", back_populates="evaluation")
+
+Candidate.evaluation = relationship("Evaluation", back_populates="candidate", uselist=False, cascade="all, delete-orphan")

@@ -69,3 +69,37 @@ class InterviewResponse(InterviewBase):
 
     class Config:
         from_attributes = True
+
+# =============================================================================
+# EVALUATION SCHEMAS (Phase 3)
+# =============================================================================
+
+class EvaluationBase(BaseModel):
+    candidate_id: int = Field(..., description="ID of the candidate being evaluated")
+    technical: int = Field(default=0, ge=0, le=100)
+    communication: int = Field(default=0, ge=0, le=100)
+    confidence: int = Field(default=0, ge=0, le=100)
+    problem_solving: int = Field(default=0, ge=0, le=100)
+    leadership: int = Field(default=0, ge=0, le=100)
+    learning_ability: int = Field(default=0, ge=0, le=100)
+    comments: Optional[str] = Field(None, description="General evaluation comments")
+
+class EvaluationCreate(EvaluationBase):
+    pass
+
+class EvaluationUpdate(BaseModel):
+    technical: Optional[int] = Field(None, ge=0, le=100)
+    communication: Optional[int] = Field(None, ge=0, le=100)
+    confidence: Optional[int] = Field(None, ge=0, le=100)
+    problem_solving: Optional[int] = Field(None, ge=0, le=100)
+    leadership: Optional[int] = Field(None, ge=0, le=100)
+    learning_ability: Optional[int] = Field(None, ge=0, le=100)
+    comments: Optional[str] = None
+
+class EvaluationResponse(EvaluationBase):
+    id: int
+    overall_score: int = Field(default=0)
+    candidate_name: Optional[str] = None
+
+    class Config:
+        from_attributes = True

@@ -46,15 +46,20 @@
                     <span>Interviews</span>
                     <span class="badge" id="interviews-nav-badge" style="background:rgba(99,102,241,0.15);color:#a5b4fc;border:1px solid rgba(99,102,241,0.25);margin-left:auto;">0</span>
                 </a>
-                <a href="#" class="menu-item disabled" title="Available in Phase 3">
+                <!-- Phase 3: Evaluations unlocked -->
+                <a href="#" class="menu-item" id="nav-evaluations">
                     <i data-lucide="award"></i>
                     <span>Evaluations</span>
-                    <span class="badge badge-locked">P3</span>
                 </a>
-                <a href="#" class="menu-item disabled" title="Available in Phase 4">
+                <!-- Phase 4: Compare unlocked -->
+                <a href="#" class="menu-item" id="nav-compare">
                     <i data-lucide="git-compare"></i>
                     <span>Compare</span>
-                    <span class="badge badge-locked">P4</span>
+                </a>
+                <!-- Phase 5: Reports unlocked -->
+                <a href="#" class="menu-item" id="nav-reports">
+                    <i data-lucide="file-bar-chart"></i>
+                    <span>Reports</span>
                 </a>
             </nav>
             
@@ -74,8 +79,12 @@
                     <span class="stat-value" id="stats-avg-experience">0 yrs</span>
                 </div>
                 <div class="stat-row">
+                    <span class="stat-label">Evaluations</span>
+                    <span class="stat-value highlight-text" id="stats-total-evaluations">0</span>
+                </div>
+                <div class="stat-row">
                     <span class="stat-label">System Mode</span>
-                    <span class="stat-value highlight-text">Phase 2</span>
+                    <span class="stat-value highlight-text">Phase 4+5</span>
                 </div>
             </div>
 
@@ -219,6 +228,174 @@
                         </tbody>
                     </table>
                 </section>
+            </div>
+
+            <!-- ================================================================
+                 VIEW 3: EVALUATIONS PAGE (Phase 3)
+                 ================================================================ -->
+            <div id="view-evaluations" class="view-section">
+                <header class="app-header">
+                    <div class="header-title">
+                        <span class="breadcrumb">Overview / Evaluations</span>
+                        <h1>Candidate Evaluations</h1>
+                    </div>
+                    <div class="header-actions">
+                        <span class="filter-count" id="eval-count-summary" style="color:var(--text-secondary);font-size:0.9rem;">Loading...</span>
+                        <button class="btn btn-secondary" id="btn-export-csv" title="Download all candidate data as CSV">
+                            <i data-lucide="download"></i>
+                            <span>Export CSV</span>
+                        </button>
+                    </div>
+                </header>
+
+                <!-- Evaluations Table -->
+                <section class="table-container glass-card">
+                    <table class="candidates-table" id="evaluations-table-element" style="min-width:900px;">
+                        <thead>
+                            <tr>
+                                <th>Candidate</th>
+                                <th>Technical</th>
+                                <th>Communication</th>
+                                <th>Confidence</th>
+                                <th>Problem Solving</th>
+                                <th>Leadership</th>
+                                <th>Learning</th>
+                                <th>Overall Score</th>
+                                <th class="actions-header">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="evaluations-tbody">
+                            <tr class="empty-state-row">
+                                <td colspan="9">
+                                    <div class="table-empty-state">
+                                        <i data-lucide="star" class="empty-state-icon"></i>
+                                        <h3>No Evaluations Yet</h3>
+                                        <p>Go to the Dashboard and click the Star icon on any candidate to evaluate them.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </section>
+            </div>
+
+            <!-- ================================================================
+                 VIEW 4: COMPARISON DASHBOARD (Phase 4)
+                 ================================================================ -->
+            <div id="view-compare" class="view-section">
+                <header class="app-header">
+                    <div class="header-title">
+                        <span class="breadcrumb">Overview / Compare</span>
+                        <h1>Candidate Comparison</h1>
+                    </div>
+                    <div class="header-actions">
+                        <span class="filter-count" id="compare-count-summary" style="color:var(--text-secondary);font-size:0.9rem;">Loading...</span>
+                    </div>
+                </header>
+
+                <!-- Score Category Legend -->
+                <div class="compare-legend">
+                    <div class="legend-item"><span class="legend-dot" style="background:var(--color-success)"></span> Excellent (70+)</div>
+                    <div class="legend-item"><span class="legend-dot" style="background:var(--color-warning)"></span> Average (50-69)</div>
+                    <div class="legend-item"><span class="legend-dot" style="background:var(--color-danger)"></span> Needs Work (&lt;50)</div>
+                    <div class="legend-item"><span class="legend-dot" style="background:#a5b4fc;border:2px solid #a5b4fc;"></span> Category Winner</div>
+                </div>
+
+                <section class="table-container glass-card">
+                    <table class="compare-table" id="compare-table-element">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Candidate</th>
+                                <th class="compare-sort-header" data-metric="technical">Technical <i data-lucide="chevrons-up-down" class="sort-icon"></i></th>
+                                <th class="compare-sort-header" data-metric="communication">Communication <i data-lucide="chevrons-up-down" class="sort-icon"></i></th>
+                                <th class="compare-sort-header" data-metric="confidence">Confidence <i data-lucide="chevrons-up-down" class="sort-icon"></i></th>
+                                <th class="compare-sort-header" data-metric="problem_solving">Problem Solving <i data-lucide="chevrons-up-down" class="sort-icon"></i></th>
+                                <th class="compare-sort-header" data-metric="leadership">Leadership <i data-lucide="chevrons-up-down" class="sort-icon"></i></th>
+                                <th class="compare-sort-header" data-metric="learning_ability">Learning <i data-lucide="chevrons-up-down" class="sort-icon"></i></th>
+                                <th class="compare-sort-header" data-metric="overall_score">Overall <i data-lucide="chevrons-up-down" class="sort-icon"></i></th>
+                            </tr>
+                        </thead>
+                        <tbody id="compare-tbody">
+                            <tr class="empty-state-row">
+                                <td colspan="9">
+                                    <div class="table-empty-state">
+                                        <i data-lucide="bar-chart-3" class="empty-state-icon"></i>
+                                        <h3>No Data to Compare</h3>
+                                        <p>Evaluate at least 2 candidates first using the Star icon on the Dashboard.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </section>
+            </div>
+
+            <!-- ================================================================
+                 VIEW 5: REPORTS (Phase 5)
+                 ================================================================ -->
+            <div id="view-reports" class="view-section">
+                <header class="app-header">
+                    <div class="header-title">
+                        <span class="breadcrumb">Overview / Reports</span>
+                        <h1>Reports &amp; Export</h1>
+                    </div>
+                </header>
+
+                <div class="reports-grid">
+
+                    <!-- Card 1: Export CSV -->
+                    <div class="report-card glass-card">
+                        <div class="report-card-icon" style="background:rgba(16,185,129,0.1);color:var(--color-success);">
+                            <i data-lucide="file-spreadsheet"></i>
+                        </div>
+                        <h3>Export Candidates CSV</h3>
+                        <p>Download a full CSV file containing all candidate profiles and their evaluation scores. Perfect for sharing with stakeholders or importing into Excel.</p>
+                        <div class="report-card-footer">
+                            <button class="btn btn-primary" id="btn-report-export-csv" style="background:var(--color-success);border-color:var(--color-success);">
+                                <i data-lucide="download"></i> Download CSV
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Card 2: Print Report -->
+                    <div class="report-card glass-card">
+                        <div class="report-card-icon" style="background:rgba(99,102,241,0.1);color:var(--color-primary);">
+                            <i data-lucide="printer"></i>
+                        </div>
+                        <h3>Print Scorecard Report</h3>
+                        <p>Generate a clean, print-friendly version of the candidate comparison scorecard. Useful for review meetings and stakeholder discussions.</p>
+                        <div class="report-card-footer">
+                            <button class="btn btn-primary" id="btn-report-print">
+                                <i data-lucide="printer"></i> Print Report
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Card 3: Platform Summary -->
+                    <div class="report-card glass-card">
+                        <div class="report-card-icon" style="background:rgba(139,92,246,0.1);color:#c4b5fd;">
+                            <i data-lucide="layout-dashboard"></i>
+                        </div>
+                        <h3>Platform Summary</h3>
+                        <p>Overview of the current hiring pipeline with live statistics from the database.</p>
+                        <div class="report-stats" id="report-stats-panel">
+                            <div class="report-stat-item">
+                                <span id="report-stat-candidates">0</span>
+                                <label>Candidates</label>
+                            </div>
+                            <div class="report-stat-item">
+                                <span id="report-stat-interviews">0</span>
+                                <label>Interviews</label>
+                            </div>
+                            <div class="report-stat-item">
+                                <span id="report-stat-evaluations">0</span>
+                                <label>Evaluated</label>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
             </div>
 
         </main>
@@ -415,6 +592,92 @@
                     <button type="submit" class="btn btn-primary" id="btn-submit-interview-form">
                         <span id="interview-submit-btn-text">Schedule Interview</span>
                         <i data-lucide="arrow-right" class="btn-arrow"></i>
+                    </button>
+                </footer>
+            </form>
+        </div>
+    </div>
+
+    <!-- ========================================================================
+         MODAL 3: Evaluate Candidate (Phase 3)
+         ======================================================================== -->
+    <div class="modal-overlay" id="evaluation-modal">
+        <div class="modal-card glass-card animate-slide-up">
+            <header class="modal-header">
+                <div class="header-icon-wrap" style="background-color:rgba(245,158,11,0.1);border-color:rgba(245,158,11,0.2);color:var(--color-warning);">
+                    <i data-lucide="star"></i>
+                </div>
+                <div>
+                    <h2 id="eval-modal-title">Evaluate Candidate</h2>
+                    <p id="eval-modal-subtitle">Score the candidate across 6 key metrics.</p>
+                </div>
+                <button class="btn-close" id="btn-close-eval-modal" aria-label="Close evaluation modal">
+                    <i data-lucide="x"></i>
+                </button>
+            </header>
+
+            <form id="evaluation-form">
+                <input type="hidden" id="eval-candidate-id">
+                <input type="hidden" id="eval-id">
+
+                <div class="form-grid" style="grid-template-columns: 1fr; gap: 16px;">
+                    <!-- Overall Score Preview -->
+                    <div class="eval-overall-preview">
+                        <span style="color:var(--text-muted);font-size:0.8rem;text-transform:uppercase;font-weight:600;letter-spacing:1px;">Expected Overall Score</span>
+                        <div id="eval-overall-score-display" class="overall-score-display">0%</div>
+                    </div>
+
+                    <!-- Metrics Sliders -->
+                    <div class="slider-group">
+                        <label for="eval-technical">Technical Proficiency <span class="score-value" id="val-technical">0</span></label>
+                        <input type="range" id="eval-technical" class="custom-slider" min="0" max="100" value="0">
+                    </div>
+
+                    <div class="slider-group">
+                        <label for="eval-communication">Communication Skills <span class="score-value" id="val-communication">0</span></label>
+                        <input type="range" id="eval-communication" class="custom-slider" min="0" max="100" value="0">
+                    </div>
+
+                    <div class="slider-group">
+                        <label for="eval-confidence">Confidence & Presentation <span class="score-value" id="val-confidence">0</span></label>
+                        <input type="range" id="eval-confidence" class="custom-slider" min="0" max="100" value="0">
+                    </div>
+
+                    <div class="slider-group">
+                        <label for="eval-problem-solving">Problem Solving <span class="score-value" id="val-problem-solving">0</span></label>
+                        <input type="range" id="eval-problem-solving" class="custom-slider" min="0" max="100" value="0">
+                    </div>
+
+                    <div class="slider-group">
+                        <label for="eval-leadership">Leadership Potential <span class="score-value" id="val-leadership">0</span></label>
+                        <input type="range" id="eval-leadership" class="custom-slider" min="0" max="100" value="0">
+                    </div>
+
+                    <div class="slider-group">
+                        <label for="eval-learning">Learning Ability <span class="score-value" id="val-learning">0</span></label>
+                        <input type="range" id="eval-learning" class="custom-slider" min="0" max="100" value="0">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="eval-comments">General Comments</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="file-text" class="input-icon" style="top:14px;transform:none;"></i>
+                            <textarea id="eval-comments" placeholder="Final thoughts on this candidate..."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form error -->
+                <div class="form-error-alert hidden" id="eval-form-error-alert">
+                    <i data-lucide="alert-circle"></i>
+                    <span id="eval-form-error-message">Error message.</span>
+                </div>
+
+                <footer class="modal-footer">
+                    <button type="button" class="btn btn-ghost" id="btn-cancel-eval-modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="btn-submit-eval-form" style="background-color:var(--color-warning);border-color:var(--color-warning);box-shadow: 0 4px 15px rgba(245,158,11,0.3);">
+                        <span id="eval-submit-btn-text">Save Evaluation</span>
+                        <i data-lucide="check" class="btn-arrow"></i>
                     </button>
                 </footer>
             </form>

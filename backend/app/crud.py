@@ -135,3 +135,69 @@ def get_interview_count(db: Session) -> int:
     """Return total number of interviews in the database."""
     return db.query(models.Interview).count()
 
+# =============================================================================
+# EVALUATION CRUD (Phase 3)
+# =============================================================================
+
+def _calculate_overall_score(eval_data: dict) -> int:
+    """Helper to compute the average of the 6 evaluation metrics."""
+    scores = [
+        eval_data.get('technical', 0),
+        eval_data.get('communication', 0),
+        eval_data.get('confidence', 0),
+        eval_data.get('problem_solving', 0),
+        eval_data.get('leadership', 0),
+        eval_data.get('learning_ability', 0)
+    ]
+    return int(sum(scores) / len(scores))
+
+def get_evaluation_by_candidate(db: Session, candidate_id: int):
+    """Retrieve the single evaluation for a candidate."""
+    return db.query(models.Evaluation).filter(models.Evaluation.candidate_id == candidate_id).first()
+
+def create_evaluation(db: Session, evaluation: schemas.EvaluationCreate):
+    """Add a new evaluation scorecard for a candidate."""
+    eval_data = evaluation.model_dump()
+    overall = _calculate_overall_score(eval_data)
+    
+    db_eval = models.Evaluation(
+        candidate_id=evaluation.candidate_id,
+        technical=evaluation.technical,
+        communication=evaluation.communication,
+        confidence=evaluation.confidence,
+        problem_solving=evaluation.problem_solving,
+        leadership=evaluation.leadership,
+        learning_ability=evaluation.learning_ability,
+        comments=evaluation.comments,
+        overall_score=overall
+    )
+    db.add(db_eval)
+    db.commit()
+    db.refresh(db_eval)
+    return db_eval
+
+def update_evaluation(db: Session, evaluation_id: int, evaluation_update: schemas.EvaluationUpdate):
+    """Update an existing evaluation scorecard."""
+    db_eval = db.query(models.Evaluation).filter(models.Evaluation.id == evaluation_id).first()
+    if not db_eval:
+        return None
+    
+    update_data = evaluation_update.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(db_eval, key, value)
+        
+    # Recalculate overall score after update
+    current_data = {
+        'technical': db_eval.technical,
+        'communication': db_eval.communication,
+        'confidence': db_eval.confidence,
+        'problem_solving': db_eval.problem_solving,
+        'leadership': db_eval.leadership,
+        'learning_ability': db_eval.learning_ability,
+    }
+    db_eval.overall_score = _calculate_overall_score(current_data)
+    
+    db.commit()
+    db.refresh(db_eval)
+    return db_eval
+

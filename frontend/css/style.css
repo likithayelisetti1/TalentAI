@@ -729,7 +729,8 @@ body {
     border-radius: var(--radius-lg);
     display: flex;
     flex-direction: column;
-    max-height: 90vh;
+    max-height: 92vh;
+    height: auto;
 }
 
 .modal-header {
@@ -792,11 +793,18 @@ body {
 }
 
 /* Forms Framework */
-#candidate-form {
+#candidate-form,
+#interview-form,
+#evaluation-form {
     display: flex;
     flex-direction: column;
     flex-grow: 1;
     overflow-y: auto;
+}
+
+#evaluation-form .form-grid {
+    overflow-y: visible;
+    padding-bottom: 8px;
 }
 
 .form-grid {
@@ -901,7 +909,11 @@ body {
     gap: 12px;
     padding: 20px 24px;
     border-top: 1px solid var(--border-glass);
-    background-color: rgba(15, 17, 26, 0.3);
+    background-color: rgba(15, 17, 26, 0.95);
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    flex-shrink: 0;
 }
 
 .btn-arrow {
@@ -1336,3 +1348,455 @@ body {
     to { transform: rotate(360deg); }
 }
 
+/* ==========================================================================
+   EVALUATION PHASE 3 STYLES
+   ========================================================================== */
+
+/* Overall Score Display */
+.eval-overall-preview {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 16px;
+    border-radius: var(--radius-md);
+    border: 1px dashed var(--border-glass);
+    margin-bottom: 12px;
+}
+
+.overall-score-display {
+    font-size: 2.5rem;
+    font-family: var(--font-heading);
+    font-weight: 800;
+    color: var(--color-warning);
+    text-shadow: 0 0 15px rgba(245, 158, 11, 0.3);
+    margin-top: 4px;
+}
+
+/* Slider Custom Styles */
+.slider-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.02);
+    padding: 12px 16px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-glass);
+}
+
+.slider-group label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.score-value {
+    color: var(--text-primary);
+    font-weight: 700;
+    font-family: var(--font-heading);
+}
+
+.custom-slider {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 6px;
+    border-radius: 4px;
+    background: #2a2d3e;
+    outline: none;
+    opacity: 0.8;
+    transition: var(--transition-smooth);
+}
+
+.custom-slider:hover {
+    opacity: 1;
+}
+
+.custom-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--color-warning);
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+    border: 2px solid #fff;
+}
+
+.custom-slider::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--color-warning);
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+    border: 2px solid #fff;
+}
+
+/* Score Bars in History Drawer */
+.score-bars-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 16px;
+}
+
+.score-bar-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.score-bar-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.score-bar-track {
+    width: 100%;
+    height: 8px;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.score-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 1s ease-in-out;
+}
+
+.eval-summary-card {
+    background: rgba(245, 158, 11, 0.05);
+    border: 1px solid rgba(245, 158, 11, 0.2);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    margin-top: 16px;
+}
+
+.eval-summary-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(245, 158, 11, 0.1);
+    padding-bottom: 12px;
+    margin-bottom: 12px;
+}
+
+.eval-badge {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.eval-badge.excellent {
+    background: rgba(16, 185, 129, 0.15);
+    color: var(--color-success);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.eval-badge.good {
+    background: rgba(14, 165, 233, 0.15);
+    color: var(--color-secondary);
+    border: 1px solid rgba(14, 165, 233, 0.3);
+}
+
+.eval-badge.average {
+    background: rgba(245, 158, 11, 0.15);
+    color: var(--color-warning);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.eval-badge.poor {
+    background: rgba(239, 68, 68, 0.15);
+    color: var(--color-danger);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+/* ==========================================================================
+   PHASE 4: COMPARISON DASHBOARD
+   ========================================================================== */
+
+/* Legend bar */
+.compare-legend {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+/* Comparison Table */
+.compare-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    min-width: 1000px;
+}
+
+.compare-table th {
+    background-color: rgba(15, 17, 26, 0.4);
+    padding: 16px 20px;
+    font-size: 0.78rem;
+    font-family: var(--font-heading);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+    font-weight: 600;
+    border-bottom: 1px solid var(--border-glass);
+    white-space: nowrap;
+    cursor: default;
+}
+
+.compare-sort-header {
+    cursor: pointer !important;
+    user-select: none;
+    transition: var(--transition-smooth);
+}
+
+.compare-sort-header:hover {
+    color: var(--text-primary);
+    background-color: rgba(99, 102, 241, 0.05);
+}
+
+.compare-table td {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border-glass);
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    vertical-align: middle;
+}
+
+.compare-table tbody tr {
+    transition: var(--transition-smooth);
+}
+
+.compare-table tbody tr:hover {
+    background-color: var(--bg-card-hover);
+}
+
+/* Rank badge */
+.rank-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    font-weight: 800;
+    font-size: 0.85rem;
+    font-family: var(--font-heading);
+}
+
+.rank-1 { background: rgba(255, 215, 0, 0.15); color: #fbbf24; border: 2px solid rgba(255, 215, 0, 0.3); }
+.rank-2 { background: rgba(192, 192, 192, 0.15); color: #9ca3af; border: 2px solid rgba(192, 192, 192, 0.3); }
+.rank-3 { background: rgba(205, 127, 50, 0.15); color: #d97706; border: 2px solid rgba(205, 127, 50, 0.3); }
+.rank-other { background: rgba(99, 102, 241, 0.1); color: #a5b4fc; border: 2px solid rgba(99, 102, 241, 0.2); }
+
+/* Score chip */
+.score-chip {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    min-width: 54px;
+}
+
+.score-chip-value {
+    font-weight: 700;
+    font-size: 0.95rem;
+    font-family: var(--font-heading);
+}
+
+.score-chip-bar {
+    width: 100%;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.07);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.score-chip-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.8s ease;
+}
+
+/* Winner highlight */
+.cell-winner {
+    background-color: rgba(165, 180, 252, 0.06) !important;
+    border-left: 2px solid rgba(165, 180, 252, 0.4);
+}
+
+.cell-winner .score-chip-value {
+    color: #a5b4fc;
+}
+
+/* Overall score pill */
+.overall-score-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-weight: 800;
+    font-size: 0.95rem;
+    font-family: var(--font-heading);
+}
+
+.score-excellent { background: rgba(16, 185, 129, 0.12); color: var(--color-success); border: 1px solid rgba(16, 185, 129, 0.25); }
+.score-good { background: rgba(14, 165, 233, 0.12); color: var(--color-secondary); border: 1px solid rgba(14, 165, 233, 0.25); }
+.score-average { background: rgba(245, 158, 11, 0.12); color: var(--color-warning); border: 1px solid rgba(245, 158, 11, 0.25); }
+.score-poor { background: rgba(239, 68, 68, 0.12); color: var(--color-danger); border: 1px solid rgba(239, 68, 68, 0.25); }
+
+/* ==========================================================================
+   PHASE 5: REPORTS PAGE
+   ========================================================================== */
+
+.reports-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 24px;
+    margin-top: 8px;
+}
+
+.report-card {
+    padding: 28px;
+    border-radius: var(--radius-lg);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.report-card-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.report-card-icon i {
+    width: 26px;
+    height: 26px;
+}
+
+.report-card h3 {
+    font-size: 1.1rem;
+    font-family: var(--font-heading);
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.report-card p {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    flex: 1;
+}
+
+.report-card-footer {
+    margin-top: auto;
+    padding-top: 14px;
+    border-top: 1px solid var(--border-glass);
+}
+
+.report-stats {
+    display: flex;
+    gap: 20px;
+    margin-top: 8px;
+}
+
+.report-stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.report-stat-item span {
+    font-size: 1.8rem;
+    font-weight: 800;
+    font-family: var(--font-heading);
+    color: #c4b5fd;
+}
+
+.report-stat-item label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+/* ==========================================================================
+   PRINT STYLES (Phase 5)
+   ========================================================================== */
+
+@media print {
+    body {
+        background: #ffffff !important;
+        color: #000000 !important;
+    }
+    .app-sidebar,
+    .btn,
+    .btn-icon-only,
+    .toast-container,
+    .modal-overlay,
+    .dashboard-controls,
+    .reports-grid,
+    #btn-export-csv,
+    #btn-report-print,
+    #btn-report-export-csv {
+        display: none !important;
+    }
+    .app-main {
+        margin-left: 0 !important;
+        width: 100% !important;
+        padding: 20px !important;
+    }
+    .app-container {
+        display: block !important;
+    }
+    .table-container {
+        box-shadow: none !important;
+        border: 1px solid #ccc !important;
+    }
+    .compare-table th,
+    .compare-table td {
+        border: 1px solid #ddd !important;
+        color: #000 !important;
+        background: #fff !important;
+        padding: 8px 12px !important;
+    }
+    .view-section {
+        display: block !important;
+    }
+    #view-compare {
+        page-break-before: always;
+    }
+}
